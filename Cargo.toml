@@ -1,6 +1,6 @@
 [package]
 name = "multi-util"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 authors = ["Dave Huseby <dwh@linuxprogrammer.org>"]
 description = "Multiformat utility functions and types"
@@ -14,9 +14,9 @@ categories = ["encoding"]
 default = ["serde"]
 
 [dependencies]
-multi-base = { version = "1.0", path = "../multi-base" }
-multi-codec = { version = "1.0", path = "../multi-codec" }
-multi-trait = { version = "1.0", path = "../multi-trait" }
+multi-base = "1.0"
+multi-codec = "1.0"
+multi-trait = "1.0"
 serde = { version = "1.0", default-features = false, features = ["alloc"], optional = true }
 thiserror = { version = "2.0" }
 
