@@ -1,4 +1,4 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::{
     error::BaseEncodedError, prelude::Base, BaseEncoder, EncodingInfo, Error, MultibaseEncoder,
 };
@@ -88,7 +88,7 @@ where
                             base,
                             t,
                             enc: PhantomData,
-                        })
+                        });
                     }
                 }
                 Err(BaseEncodedError::ValueFailed.into())

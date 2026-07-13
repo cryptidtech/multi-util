@@ -1,4 +1,4 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 //! Serde (de)serialization for ['crate::prelude::Tagged'] wrapped objects
 mod de;
 mod ser;
@@ -48,11 +48,11 @@ mod tests {
         }
     }
 
-    impl Into<Vec<u8>> for Unit {
-        fn into(self) -> Vec<u8> {
+    impl From<Unit> for Vec<u8> {
+        fn from(unit: Unit) -> Vec<u8> {
             let mut v: Vec<u8> = Vec::default();
-            v.push(self.0 .0);
-            v.extend_from_slice(&self.0 .1);
+            v.push(unit.0 .0);
+            v.extend_from_slice(&unit.0 .1);
             v
         }
     }
@@ -276,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_varbytes() {
-        let v = Varbytes(vec![0x01, 0x02, 0x03]);
+        let v = Varbytes::new(vec![0x01, 0x02, 0x03]);
         assert_tokens(&v, &[Token::Bytes(&[0x03, 0x01, 0x02, 0x03])]);
     }
 

@@ -1,8 +1,8 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::{BaseEncoded, EncodingInfo, Error};
+use multi_base::Base;
+use multi_trait::{EncodeInto, TryDecodeFrom};
 use core::{fmt, ops};
-use multibase::Base;
-use multitrait::{EncodeInto, TryDecodeFrom};
 
 /// A wrapper type to handle serde of numeric types as varuint bytes
 #[derive(Clone, PartialEq)]

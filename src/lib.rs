@@ -1,4 +1,4 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 //! multiutil
 #![warn(missing_docs)]
 #![deny(
@@ -36,7 +36,7 @@ pub use error::Error;
 #[cfg(feature = "serde")]
 pub mod serde;
 
-/// Varbytes type for forcing serde of Vec<u8> to/from bytes
+/// Varbytes type for forcing serde of `Vec<u8>` to/from bytes
 pub mod varbytes;
 pub use varbytes::{EncodedVarbytes, Varbytes};
 
@@ -52,8 +52,8 @@ pub mod prelude {
     };
 
     /// re-exports
-    pub use multibase::Base;
-    pub use multicodec::Codec;
+    pub use multi_base::Base;
+    pub use multi_codec::Codec;
 }
 
 #[cfg(test)]
@@ -118,10 +118,10 @@ mod test {
         }
     }
 
-    impl Into<Vec<u8>> for Unit {
-        fn into(self) -> Vec<u8> {
+    impl From<Unit> for Vec<u8> {
+        fn from(unit: Unit) -> Vec<u8> {
             let mut v = Vec::default();
-            v.extend_from_slice(&self.0);
+            v.extend_from_slice(&unit.0);
             v
         }
     }

@@ -1,10 +1,9 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::{
     base_name,
-    BaseIter,
     error::{BaseEncodedError, BaseEncoderError},
     prelude::Base,
-    Error,
+    BaseIter, Error,
 };
 
 /// a trait for base encoding implementations
@@ -12,7 +11,7 @@ pub trait BaseEncoder {
     /// convert a &[u8] to a base encoded value
     fn to_base_encoded(base: Base, b: &[u8]) -> String;
 
-    /// convert a base encoded value to a Vec<u8>
+    /// convert a base encoded value to a `Vec<u8>`
     fn from_base_encoded(s: &str) -> Result<Vec<(Base, Vec<u8>)>, Error>;
 
     /// get the debug string for the given base
@@ -28,11 +27,13 @@ pub struct MultibaseEncoder {}
 
 impl BaseEncoder for MultibaseEncoder {
     fn to_base_encoded(base: Base, b: &[u8]) -> String {
-        multibase::encode(base, b)
+        multi_base::encode(base, b)
     }
     fn from_base_encoded(s: &str) -> Result<Vec<(Base, Vec<u8>)>, Error> {
         // try permissive multibase decoding
-        Ok(vec![multibase::decode(s, false).map_err(|_| BaseEncodedError::ValueFailed)?])
+        Ok(vec![
+            multi_base::decode(s, false).map_err(|_| BaseEncodedError::ValueFailed)?
+        ])
     }
     fn debug_string(base: Base) -> String {
         format!("{} ('{}')", base_name(base), base.code())
@@ -58,7 +59,11 @@ impl BaseEncoder for Base58Encoder {
         }
     }
     fn debug_string(_base: Base) -> String {
-        format!("{} ('{}')", base_name(Base::Base58Btc), Base::Base58Btc.code())
+        format!(
+            "{} ('{}')",
+            base_name(Base::Base58Btc),
+            Base::Base58Btc.code()
+        )
     }
     fn preferred_encoding(_base: Base) -> Base {
         Base::Base58Btc
@@ -66,22 +71,22 @@ impl BaseEncoder for Base58Encoder {
 }
 
 /// a speculative encoder that tries to detect the correct encoding and decode it
-/// encoding is always done using multibase so this does not support symetric 
-/// decode/encode round trips. this is useful for decoding CIDs that might be 
+/// encoding is always done using multibase so this does not support symetric
+/// decode/encode round trips. this is useful for decoding CIDs that might be
 /// base58 encoded "legacy" CIDs but alsy may be multibase encoded CIDs.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct DetectedEncoder {}
 
 impl BaseEncoder for DetectedEncoder {
     fn to_base_encoded(base: Base, b: &[u8]) -> String {
-        multibase::encode(base, b)
+        multi_base::encode(base, b)
     }
     fn from_base_encoded(s: &str) -> Result<Vec<(Base, Vec<u8>)>, Error> {
         // first try permissive multibase decoding
-        if let Ok((base, data)) = multibase::decode(s, false) {
+        if let Ok((base, data)) = multi_base::decode(s, false) {
             return Ok(vec![(base, data)]);
         }
-        
+
         // start at the Identity base so we skip it
         let iter: BaseIter = Base::Identity.into();
 

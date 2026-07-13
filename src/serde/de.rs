@@ -1,14 +1,14 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::{BaseEncoded, BaseEncoder, EncodingInfo, Varbytes, Varuint};
+use multi_base::Base;
+use multi_trait::prelude::TryDecodeFrom;
 use core::{fmt, marker};
-use multibase::Base;
-use multitrait::prelude::TryDecodeFrom;
 use serde::de;
 
 /// Deserialize instance of [`crate::BaseEncoded`] from a byte slice
 impl<'de, T, Enc> de::Deserialize<'de> for BaseEncoded<T, Enc>
 where
-    T: de::Deserialize<'de> + EncodingInfo + for<'a> TryFrom<&'a [u8]> + ?Sized,
+    T: de::Deserialize<'de> + EncodingInfo + for<'a> TryFrom<&'a [u8]>,
     Enc: BaseEncoder,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -23,7 +23,7 @@ where
 
         impl<'de, T, Enc> de::Visitor<'de> for BaseEncodedVisitor<T, Enc>
         where
-            T: de::Deserialize<'de> + EncodingInfo + for<'a> TryFrom<&'a [u8]> + ?Sized,
+            T: de::Deserialize<'de> + EncodingInfo + for<'a> TryFrom<&'a [u8]>,
             Enc: BaseEncoder,
         {
             type Value = BaseEncoded<T, Enc>;
@@ -57,8 +57,7 @@ where
             where
                 E: de::Error,
             {
-                Self::Value::try_from(s.as_str())
-                    .map_err(|e| de::Error::custom(e.to_string()))
+                Self::Value::try_from(s.as_str()).map_err(|e| de::Error::custom(e.to_string()))
             }
 
             // binary
@@ -198,7 +197,7 @@ impl<'de> de::Deserialize<'de> for Varbytes {
                 let (len, ptr) = usize::try_decode_from(v)
                     .map_err(|_| de::Error::custom("failed to deserialize varuint len"))?;
                 let v = ptr[..len].to_vec();
-                Ok(Varbytes(v))
+                Ok(Varbytes::new(v))
             }
 
             #[inline]
@@ -209,7 +208,7 @@ impl<'de> de::Deserialize<'de> for Varbytes {
                 let (len, ptr) = usize::try_decode_from(v)
                     .map_err(|_| de::Error::custom("failed to deserialize varuint len"))?;
                 let v = ptr[..len].to_vec();
-                Ok(Varbytes(v))
+                Ok(Varbytes::new(v))
             }
 
             // longest lifetime
@@ -221,7 +220,7 @@ impl<'de> de::Deserialize<'de> for Varbytes {
                 let (len, ptr) = usize::try_decode_from(v.as_slice())
                     .map_err(|_| de::Error::custom("failed to deserialize varuint len"))?;
                 let v = ptr[..len].to_vec();
-                Ok(Varbytes(v))
+                Ok(Varbytes::new(v))
             }
 
             // binary / human readable
@@ -240,7 +239,7 @@ impl<'de> de::Deserialize<'de> for Varbytes {
                 let (len, ptr) = usize::try_decode_from(v.as_slice())
                     .map_err(|_| de::Error::custom("failed to deserialize varuint len"))?;
                 let v = ptr[..len].to_vec();
-                Ok(Varbytes(v))
+                Ok(Varbytes::new(v))
             }
         }
 

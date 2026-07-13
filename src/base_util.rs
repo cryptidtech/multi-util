@@ -1,4 +1,4 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::prelude::Base;
 
 /// convert a multibase Base to its string equivalent
@@ -87,7 +87,7 @@ impl Iterator for BaseIter {
                 Base64Url => Base64UrlPad,
                 Base64UrlPad => Base256Emoji,
                 Base256Emoji => return None,
-            }
+            },
         };
         self.0 = Some(result);
         Some(result)
@@ -111,8 +111,8 @@ mod tests {
 
     #[test]
     fn test_all_iter() {
-        let mut iter = BaseIter::new();
-        while let Some(b) = iter.next() {
+        let iter = BaseIter::new();
+        for b in iter {
             println!("{}", base_name(b));
         }
     }
