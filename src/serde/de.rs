@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{BaseEncoded, BaseEncoder, EncodingInfo, Varbytes, Varuint};
+use core::{fmt, marker};
 use multi_base::Base;
 use multi_trait::prelude::TryDecodeFrom;
-use core::{fmt, marker};
 use serde::de;
 
 /// Deserialize instance of [`crate::BaseEncoded`] from a byte slice
