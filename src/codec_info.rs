@@ -1,4 +1,4 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::prelude::Codec;
 
 /// This trait exposes the codec information for multicoded types

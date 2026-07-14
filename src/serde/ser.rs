@@ -1,12 +1,12 @@
-// SPDX-License-Idnetifier: Apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 use crate::{BaseEncoded, BaseEncoder, EncodingInfo, Varbytes, Varuint};
-use multitrait::prelude::EncodeInto;
+use multi_trait::prelude::EncodeInto;
 use serde::ser;
 
 /// Serialize instance of [`crate::BaseEncoded`] into
 impl<T, Enc> ser::Serialize for BaseEncoded<T, Enc>
 where
-    T: ser::Serialize + EncodingInfo + Clone + Into<Vec<u8>> + ?Sized,
+    T: ser::Serialize + EncodingInfo + Clone + Into<Vec<u8>>,
     Enc: BaseEncoder,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -40,8 +40,8 @@ impl ser::Serialize for Varbytes {
     where
         S: ser::Serializer,
     {
-        let mut v = self.0.len().encode_into();
-        v.append(&mut self.0.clone());
+        let mut v = self.as_bytes().len().encode_into();
+        v.append(&mut self.as_bytes().to_vec());
         serializer.serialize_bytes(v.as_slice())
     }
 }
