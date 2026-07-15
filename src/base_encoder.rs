@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{
-    base_name,
+    BaseIter, Error, base_name,
     error::{BaseEncodedError, BaseEncoderError},
     prelude::Base,
-    BaseIter, Error,
 };
 
 /// a trait for base encoding implementations
@@ -11,7 +10,12 @@ pub trait BaseEncoder {
     /// convert a &[u8] to a base encoded value
     fn to_base_encoded(base: Base, b: &[u8]) -> String;
 
-    /// convert a base encoded value to a `Vec<u8>`
+    /// convert a base encoded value to a `Vec<u8>`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the input cannot be decoded as a valid base-encoded
+    /// value for any of the encoder's supported bases.
     fn from_base_encoded(s: &str) -> Result<Vec<(Base, Vec<u8>)>, Error>;
 
     /// get the debug string for the given base
@@ -32,7 +36,7 @@ impl BaseEncoder for MultibaseEncoder {
     fn from_base_encoded(s: &str) -> Result<Vec<(Base, Vec<u8>)>, Error> {
         // try permissive multibase decoding
         Ok(vec![
-            multi_base::decode(s, false).map_err(|_| BaseEncodedError::ValueFailed)?
+            multi_base::decode(s, false).map_err(|_| BaseEncodedError::ValueFailed)?,
         ])
     }
     fn debug_string(base: Base) -> String {
@@ -43,7 +47,7 @@ impl BaseEncoder for MultibaseEncoder {
     }
 }
 
-/// a bare Base58Btc encoder implementation for use with legacy CIDs
+/// a bare `Base58Btc` encoder implementation for use with legacy CIDs
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Base58Encoder {}
 
@@ -55,7 +59,7 @@ impl BaseEncoder for Base58Encoder {
         // try strict Base58Btc decoding
         match Base::Base58Btc.decode(s, true) {
             Ok(v) => Ok(vec![(Base::Base58Btc, v)]),
-            Err(e) => Err(BaseEncoderError::Base58(format!("{:?}", e)).into()),
+            Err(e) => Err(BaseEncoderError::Base58(format!("{e:?}")).into()),
         }
     }
     fn debug_string(_base: Base) -> String {
@@ -70,10 +74,11 @@ impl BaseEncoder for Base58Encoder {
     }
 }
 
-/// a speculative encoder that tries to detect the correct encoding and decode it
-/// encoding is always done using multibase so this does not support symetric
-/// decode/encode round trips. this is useful for decoding CIDs that might be
-/// base58 encoded "legacy" CIDs but alsy may be multibase encoded CIDs.
+/// A speculative encoder that tries to detect the correct encoding and decode it.
+///
+/// Encoding is always done using multibase so this does not support symmetric
+/// decode/encode round trips. This is useful for decoding CIDs that might be
+/// base58 encoded "legacy" CIDs but also may be multibase encoded CIDs.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct DetectedEncoder {}
 
@@ -82,28 +87,23 @@ impl BaseEncoder for DetectedEncoder {
         multi_base::encode(base, b)
     }
     fn from_base_encoded(s: &str) -> Result<Vec<(Base, Vec<u8>)>, Error> {
-        // first try permissive multibase decoding
+        // First try permissive multibase decoding (prefix-based).
         if let Ok((base, data)) = multi_base::decode(s, false) {
             return Ok(vec![(base, data)]);
         }
 
-        // start at the Identity base so we skip it
+        // Start after the Identity base so we skip it.
         let iter: BaseIter = Base::Identity.into();
 
-        // next try "naked" encoding in increasing symbol space size order.
-        // these have to be strict decodings to avoid confusion
-        let mut v = Vec::default();
+        // Try "naked" encoding in increasing symbol-space size order.
+        // Use strict decoding and bail on the first success to avoid
+        // false positives from bases with overlapping alphabets.
         for encoding in iter {
             if let Ok(data) = encoding.decode(s, true) {
-                v.push((encoding, data));
+                return Ok(vec![(encoding, data)]);
             }
         }
-        if v.is_empty() {
-            // raise an error
-            Err(BaseEncodedError::ValueFailed.into())
-        } else {
-            Ok(v)
-        }
+        Err(BaseEncodedError::ValueFailed.into())
     }
     fn debug_string(base: Base) -> String {
         format!("{} ('{}')", base_name(base), base.code())

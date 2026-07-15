@@ -1,11 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
+//! # Varuint
+//!
+//! A wrapper type for handling serde serialization of numeric types as varuint
+//! bytes.
+//!
+//! ## Relationship to `multi-trait`
+//!
+//! [`Varuint<T>`] is a thin newtype that delegates encoding/decoding to the
+//! `EncodeInto` and `TryDecodeFrom` implementations that `multi-trait`
+//! provides for the integer types themselves. It exists primarily to give
+//! numeric values a concrete `EncodingInfo` impl and a serde-friendly
+//! representation, not to define a separate varint encoding. In other words,
+//! `Varuint` and the integer trait impls in `multi-trait` are two abstraction
+//! levels over the same underlying `unsigned-varint` codec.
 use crate::{BaseEncoded, EncodingInfo, Error};
 use core::{fmt, ops};
 use multi_base::Base;
 use multi_trait::{EncodeInto, TryDecodeFrom};
 
 /// A wrapper type to handle serde of numeric types as varuint bytes
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Varuint<T>(pub T);
 
 /// type alias for a Varuint base encoded to/from string
@@ -16,7 +30,7 @@ where
     T: EncodeInto + for<'a> TryDecodeFrom<'a>,
 {
     /// create a new encoded varuint
-    pub fn encoded_new(base: Base, t: T) -> EncodedVaruint<T> {
+    pub const fn encoded_new(base: Base, t: T) -> EncodedVaruint<T> {
         BaseEncoded::new(base, Self(t))
     }
 
@@ -47,7 +61,7 @@ where
 impl<T> ops::Deref for Varuint<T> {
     type Target = T;
 
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &T {
         &self.0
     }
@@ -67,7 +81,7 @@ impl<T> From<Varuint<T>> for Vec<u8>
 where
     T: EncodeInto,
 {
-    fn from(vu: Varuint<T>) -> Vec<u8> {
+    fn from(vu: Varuint<T>) -> Self {
         vu.0.encode_into()
     }
 }
@@ -139,6 +153,6 @@ mod test {
     #[test]
     fn test_debug() {
         let v = Varuint(0xed_u64);
-        assert_eq!("[237, 1]".to_string(), format!("{:?}", v));
+        assert_eq!("[237, 1]".to_string(), format!("{v:?}"));
     }
 }

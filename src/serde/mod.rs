@@ -7,7 +7,7 @@ mod ser;
 mod tests {
     use crate::prelude::*;
     use serde::{Deserialize, Serialize};
-    use serde_test::{assert_tokens, Configure, Token};
+    use serde_test::{Configure, Token, assert_tokens};
 
     #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
     struct Unit((u8, [u8; 2]));
@@ -16,7 +16,7 @@ mod tests {
 
     impl Unit {
         fn encoded_default() -> EncodedUnit {
-            EncodedUnit::new(Unit::preferred_encoding(), Unit::default())
+            EncodedUnit::new(Self::preferred_encoding(), Self::default())
         }
     }
 
@@ -49,10 +49,10 @@ mod tests {
     }
 
     impl From<Unit> for Vec<u8> {
-        fn from(unit: Unit) -> Vec<u8> {
-            let mut v: Vec<u8> = Vec::default();
-            v.push(unit.0 .0);
-            v.extend_from_slice(&unit.0 .1);
+        fn from(unit: Unit) -> Self {
+            let mut v: Self = Self::default();
+            v.push(unit.0.0);
+            v.extend_from_slice(&unit.0.1);
             v
         }
     }
@@ -137,49 +137,49 @@ mod tests {
     #[test]
     fn test_u8_varuint() {
         let v = Varuint(0x01_u8);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])]);
     }
 
     #[test]
     fn test_u8_long_varuint() {
         let v = Varuint(0xFF_u8);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0xFF, 0x01])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0xFF, 0x01])]);
     }
 
     #[test]
     fn test_u16_varuint() {
         let v = Varuint(0x0100_u16);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0x80, 0x02])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0x80, 0x02])]);
     }
 
     #[test]
     fn test_u16_short_varuint() {
         let v = Varuint(0x0001_u16);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])]);
     }
 
     #[test]
     fn test_u16_long_varuint() {
         let v = Varuint(0xFFFF_u16);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0xFF, 0xFF, 0x03])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0xFF, 0xFF, 0x03])]);
     }
 
     #[test]
     fn test_u32_varuint() {
         let v = Varuint(0x0100_0000_u32);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0x80, 0x80, 0x80, 0x08])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0x80, 0x80, 0x80, 0x08])]);
     }
 
     #[test]
     fn test_u32_short_varuint() {
         let v = Varuint(0x0000_0001_u32);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])]);
     }
 
     #[test]
     fn test_u32_long_varuint() {
         let v = Varuint(0xFFFF_FFFF_u32);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0xFF, 0xFF, 0xFF, 0xFF, 0x0F])]);
     }
 
     #[test]
@@ -190,13 +190,13 @@ mod tests {
             &[Token::BorrowedBytes(&[
                 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01,
             ])],
-        )
+        );
     }
 
     #[test]
     fn test_u64_short_varuint() {
         let v = Varuint(0x0000_0000_0000_0001_u64);
-        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])])
+        assert_tokens(&v, &[Token::BorrowedBytes(&[0x01])]);
     }
 
     #[test]
@@ -207,7 +207,7 @@ mod tests {
             &[Token::BorrowedBytes(&[
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
             ])],
-        )
+        );
     }
 
     #[test]
@@ -219,13 +219,13 @@ mod tests {
                 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
                 0x80, 0x80, 0x80, 0x02,
             ])],
-        )
+        );
     }
 
     #[test]
     fn test_u128_short_varuint() {
         let v = Varuint(0x0000_0000_0000_0000_0000_0000_0000_0001_u128);
-        assert_tokens(&v, &[Token::Bytes(&[0x01])])
+        assert_tokens(&v, &[Token::Bytes(&[0x01])]);
     }
 
     #[test]
@@ -237,7 +237,7 @@ mod tests {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                 0xFF, 0xFF, 0xFF, 0xFF, 0x03,
             ])],
-        )
+        );
     }
 
     #[test]
@@ -248,13 +248,13 @@ mod tests {
             &[Token::Bytes(&[
                 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01,
             ])],
-        )
+        );
     }
 
     #[test]
     fn test_usize_short_varuint() {
         let v = Varuint(0x0000_0000_0000_0001_usize);
-        assert_tokens(&v, &[Token::Bytes(&[0x01])])
+        assert_tokens(&v, &[Token::Bytes(&[0x01])]);
     }
 
     #[test]
@@ -265,7 +265,7 @@ mod tests {
             &[Token::Bytes(&[
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01,
             ])],
-        )
+        );
     }
 
     #[test]

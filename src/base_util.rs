@@ -2,8 +2,14 @@
 use crate::prelude::Base;
 
 /// convert a multibase Base to its string equivalent
+#[must_use]
 pub fn base_name(b: Base) -> String {
-    use Base::*;
+    use Base::{
+        Base2, Base8, Base10, Base16Lower, Base16Upper, Base32HexLower, Base32HexPadLower,
+        Base32HexPadUpper, Base32HexUpper, Base32Lower, Base32PadLower, Base32PadUpper,
+        Base32Upper, Base32Z, Base36Lower, Base36Upper, Base58Btc, Base58Flickr, Base64, Base64Pad,
+        Base64Url, Base64UrlPad, Base256Emoji, Identity,
+    };
     match b {
         Identity => "Identity",
         Base2 => "Base2",
@@ -43,8 +49,9 @@ impl Default for BaseIter {
 }
 
 impl BaseIter {
-    /// create a new BaseIter
-    pub fn new() -> Self {
+    /// create a new `BaseIter`
+    #[must_use]
+    pub const fn new() -> Self {
         Self(None)
     }
 }
@@ -59,7 +66,12 @@ impl Iterator for BaseIter {
     type Item = Base;
 
     fn next(&mut self) -> Option<Self::Item> {
-        use Base::*;
+        use Base::{
+            Base2, Base8, Base10, Base16Lower, Base16Upper, Base32HexLower, Base32HexPadLower,
+            Base32HexPadUpper, Base32HexUpper, Base32Lower, Base32PadLower, Base32PadUpper,
+            Base32Upper, Base32Z, Base36Lower, Base36Upper, Base58Btc, Base58Flickr, Base64,
+            Base64Pad, Base64Url, Base64UrlPad, Base256Emoji, Identity,
+        };
         let result = match self.0 {
             None => Identity,
             Some(b) => match b {
@@ -106,7 +118,7 @@ mod tests {
     #[test]
     fn test_last_iter() {
         let mut iter: BaseIter = Base::Base256Emoji.into();
-        assert_eq!(iter.next(), None)
+        assert_eq!(iter.next(), None);
     }
 
     #[test]

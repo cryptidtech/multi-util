@@ -9,10 +9,10 @@ pub enum Error {
     /// Multicodec decode error
     #[error(transparent)]
     Multicodec(#[from] multi_codec::Error),
-    /// BaseEncoded error
+    /// `BaseEncoded` error
     #[error(transparent)]
     BaseEncoded(#[from] BaseEncodedError),
-    /// BaseEncoder error
+    /// `BaseEncoder` error
     #[error(transparent)]
     BaseEncoder(#[from] BaseEncoderError),
     /// Custom error for inner types to use when nothing else works
@@ -43,12 +43,32 @@ pub enum Error {
         /// The actual number of bytes available in the buffer
         actual: usize,
     },
+    /// Decoded length exceeds the configured maximum
+    ///
+    /// This error occurs when a varint length claim exceeds [`crate::varbytes::MAX_DECODED_SIZE`].
+    /// Enforcing an upper bound on a single decoded `Varbytes` value prevents a peer that supplies
+    /// a legitimately-sized buffer from causing the decoder to allocate an arbitrarily large
+    /// `Vec<u8>` (`DoS` via memory exhaustion). The default ceiling is 16 MiB, which comfortably
+    /// exceeds every legitimate multiformat payload in this stack while still bounding the
+    /// worst-case allocation for untrusted wire data.
+    ///
+    /// # Security
+    ///
+    /// This validation mitigates CWE-400 (Uncontrolled Resource Consumption).
+    #[error("decoded length {claimed} exceeds maximum {max}")]
+    InputTooLarge {
+        /// The number of bytes claimed by the length prefix
+        claimed: usize,
+        /// The configured maximum decoded size
+        max: usize,
+    },
 }
 
 impl Error {
     /// create a custom error instance
+    #[must_use]
     pub fn custom(s: &str) -> Self {
-        Error::Custom(s.to_string())
+        Self::Custom(s.to_string())
     }
 }
 
@@ -56,7 +76,7 @@ impl Error {
 #[derive(Clone, Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum BaseEncodedError {
-    /// BaseEncoder error
+    /// `BaseEncoder` error
     #[error(transparent)]
     BaseEncoder(#[from] BaseEncoderError),
     /// Value decoding failed

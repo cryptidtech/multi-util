@@ -69,14 +69,13 @@ where
                 let base = match seq.next_element::<char>()? {
                     Some(b) => Base::from_code(b).map_err(|e| de::Error::custom(e.to_string()))?,
                     None => {
-                        return Err(de::Error::custom("expected base encoding char".to_string()))
+                        return Err(de::Error::custom("expected base encoding char".to_string()));
                     }
                 };
 
-                let t = match seq.next_element()? {
-                    Some(t) => t,
-                    None => return Err(de::Error::custom("expected inner type value".to_string())),
-                };
+                let t = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::custom("expected inner type value".to_string()))?;
 
                 Ok(Self::Value {
                     enc: marker::PhantomData,
