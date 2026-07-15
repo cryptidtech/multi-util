@@ -41,7 +41,7 @@ impl ser::Serialize for Varbytes {
         S: ser::Serializer,
     {
         let mut v = self.as_bytes().len().encode_into();
-        v.append(&mut self.as_bytes().to_vec());
+        v.extend_from_slice(self.as_bytes());
         serializer.serialize_bytes(v.as_slice())
     }
 }

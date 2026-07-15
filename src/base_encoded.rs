@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{
-    error::BaseEncodedError, prelude::Base, BaseEncoder, EncodingInfo, Error, MultibaseEncoder,
+    BaseEncoder, EncodingInfo, Error, MultibaseEncoder, error::BaseEncodedError, prelude::Base,
 };
 use core::{
     cmp::Ordering,
@@ -12,7 +12,7 @@ use core::{
 
 /// Smart pointer for multibase encoded data. This supports encoding to and
 /// decoding from multibase encoding strings using [`TryFrom<&str>`] and
-/// ['to_string()']
+/// [`to_string()`](core::fmt::Display::to_string)
 #[derive(Clone)]
 pub struct BaseEncoded<T, Enc = MultibaseEncoder>
 where
@@ -29,8 +29,8 @@ where
     T: EncodingInfo,
     Enc: BaseEncoder,
 {
-    /// Construct a new BaseEncoded instance with the given base
-    pub fn new(base: Base, t: T) -> Self {
+    /// Construct a new `BaseEncoded` instance with the given base
+    pub const fn new(base: Base, t: T) -> Self {
         Self {
             base,
             t,
@@ -98,22 +98,22 @@ where
     }
 }
 
-impl<T, Enc> PartialEq<BaseEncoded<T, Enc>> for BaseEncoded<T, Enc>
+impl<T, Enc> PartialEq<Self> for BaseEncoded<T, Enc>
 where
     T: EncodingInfo + PartialEq<T> + ?Sized,
     Enc: BaseEncoder,
 {
-    fn eq(&self, other: &BaseEncoded<T, Enc>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.base == other.base && self.t == other.t
     }
 }
 
-impl<T, Enc> PartialOrd<BaseEncoded<T, Enc>> for BaseEncoded<T, Enc>
+impl<T, Enc> PartialOrd<Self> for BaseEncoded<T, Enc>
 where
     T: EncodingInfo + PartialEq<T> + PartialOrd<T> + ?Sized,
     Enc: BaseEncoder,
 {
-    fn partial_cmp(&self, other: &BaseEncoded<T, Enc>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.t.partial_cmp(&other.t)
     }
 }
@@ -141,8 +141,7 @@ where
     Enc: BaseEncoder,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let s = self.to_string();
-        s.hash(state);
+        self.to_string().hash(state);
     }
 }
 
@@ -153,7 +152,7 @@ where
 {
     type Target = T;
 
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.t
     }
@@ -164,7 +163,7 @@ where
     T: EncodingInfo,
     Enc: BaseEncoder,
 {
-    #[inline(always)]
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.t
     }
@@ -190,6 +189,6 @@ where
     Enc: BaseEncoder,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} - {:?}", Enc::debug_string(self.base), self.t,)
+        write!(f, "{} - {:?}", Enc::debug_string(self.base), self.t)
     }
 }

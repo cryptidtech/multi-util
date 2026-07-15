@@ -5,34 +5,49 @@ use multi_base::Base;
 use multi_trait::prelude::{EncodeInto, TryDecodeFrom};
 
 /// A wrapper type to handle serde of byte arrays as bytes
-#[derive(Clone, Default, PartialEq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Varbytes(Vec<u8>);
+
+/// Maximum number of bytes a single [`Varbytes`] value will allocate when
+/// decoded from untrusted wire data.
+///
+/// The 16 MiB ceiling comfortably exceeds every legitimate multiformat payload
+/// handled by this crate stack (the largest is a Classic `McEliece` secret key
+/// at a few hundred KiB) while bounding the worst-case allocation an attacker
+/// can trigger with a crafted length prefix. Callers that need a different
+/// bound should validate the raw buffer length before invoking
+/// [`Varbytes::try_decode_from`].
+pub const MAX_DECODED_SIZE: usize = 16 * 1024 * 1024;
 
 /// type alias for a Varbytes base encoded to/from string
 pub type EncodedVarbytes = BaseEncoded<Varbytes>;
 
 impl Varbytes {
     /// Create a new Varbytes from a Vec<u8>
-    pub fn new(data: Vec<u8>) -> Self {
+    #[must_use]
+    pub const fn new(data: Vec<u8>) -> Self {
         Self(data)
     }
 
     /// create an encoded varbytes
-    pub fn encoded_new(base: Base, v: Vec<u8>) -> EncodedVarbytes {
-        BaseEncoded::new(base, Varbytes::new(v))
+    #[must_use]
+    pub const fn encoded_new(base: Base, v: Vec<u8>) -> EncodedVarbytes {
+        BaseEncoded::new(base, Self::new(v))
     }
 
     /// Get a reference to the inner byte slice
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 
     /// Get a mutable reference to the inner byte vector
-    pub fn as_bytes_mut(&mut self) -> &mut Vec<u8> {
+    pub const fn as_bytes_mut(&mut self) -> &mut Vec<u8> {
         &mut self.0
     }
 
     /// consume self and return inner vec
+    #[must_use]
     pub fn to_inner(self) -> Vec<u8> {
         self.0
     }
@@ -47,7 +62,7 @@ impl fmt::Debug for Varbytes {
 impl ops::Deref for Varbytes {
     type Target = Vec<u8>;
 
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -64,7 +79,7 @@ impl EncodingInfo for Varbytes {
 }
 
 impl From<Varbytes> for Vec<u8> {
-    fn from(vb: Varbytes) -> Vec<u8> {
+    fn from(vb: Varbytes) -> Self {
         vb.encode_into()
     }
 }
@@ -72,7 +87,7 @@ impl From<Varbytes> for Vec<u8> {
 impl EncodeInto for Varbytes {
     fn encode_into(&self) -> Vec<u8> {
         let mut v = self.0.len().encode_into();
-        v.append(&mut self.0.clone());
+        v.extend_from_slice(&self.0);
         v
     }
 }
@@ -91,6 +106,16 @@ impl<'a> TryDecodeFrom<'a> for Varbytes {
 
     fn try_decode_from(bytes: &'a [u8]) -> Result<(Self, &'a [u8]), Self::Error> {
         let (len, ptr) = usize::try_decode_from(bytes)?;
+
+        // Reject length claims that exceed the configured maximum decoded size.
+        // This bounds the worst-case allocation for untrusted wire data and
+        // mitigates CWE-400 (Uncontrolled Resource Consumption).
+        if len > MAX_DECODED_SIZE {
+            return Err(Error::InputTooLarge {
+                claimed: len,
+                max: MAX_DECODED_SIZE,
+            });
+        }
 
         // Validate buffer has enough data for claimed length
         // This prevents buffer overflow (CWE-125) when length claim exceeds available data
@@ -149,7 +174,7 @@ mod test {
     #[test]
     fn test_debug() {
         let v = Varbytes::new(vec![1, 2, 3]);
-        assert_eq!("[3, 1, 2, 3]".to_string(), format!("{:?}", v));
+        assert_eq!("[3, 1, 2, 3]".to_string(), format!("{v:?}"));
     }
 
     // ============================================================================
@@ -183,13 +208,20 @@ mod test {
             "Should reject length claim that exceeds available data"
         );
 
-        // Verify correct error type
+        // Verify correct error type. The 4GB claim exceeds both the
+        // MAX_DECODED_SIZE cap (16 MiB) and the available buffer (3 bytes);
+        // either InputTooLarge or InsufficientData is an acceptable rejection
+        // — both prevent the out-of-bounds read.
         match result.unwrap_err() {
+            Error::InputTooLarge { claimed, max } => {
+                assert_eq!(claimed, huge_length);
+                assert_eq!(max, MAX_DECODED_SIZE);
+            }
             Error::InsufficientData { expected, actual } => {
                 assert_eq!(expected, huge_length);
                 assert_eq!(actual, 3);
             }
-            e => panic!("Expected InsufficientData error, got: {:?}", e),
+            e => panic!("Expected InputTooLarge or InsufficientData error, got: {e:?}"),
         }
     }
 
@@ -371,7 +403,7 @@ mod test {
                         prop_assert_eq!(expected, claimed_len);
                         prop_assert_eq!(actual, actual_len);
                     }
-                    e => return Err(TestCaseError::fail(format!("Wrong error type: {:?}", e))),
+                    e => return Err(TestCaseError::fail(format!("Wrong error type: {e:?}"))),
                 }
             }
         }

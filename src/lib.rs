@@ -1,30 +1,41 @@
 // SPDX-License-Identifier: Apache-2.0
-//! multiutil
+//! # multi-util
+//!
+//! Multiformat utility functions and types.
+//!
+//! ## `no_std` Note
+//!
+//! This crate is currently std-only. The `serde` dependency is configured with
+//! `default-features = false, features = ["alloc"]` so that the serde layer
+//! itself does not pull in std, but the crate as a whole still requires std
+//! via `thiserror` and the lack of a `#![no_std]` crate attribute. A future
+//! release may introduce a `std` feature gate and full `no_std` support.
 #![warn(missing_docs)]
 #![deny(
+    unsafe_code,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
     unused_qualifications
 )]
 
-/// BaseEncoded smart pointer
+/// `BaseEncoded` smart pointer
 pub mod base_encoded;
 pub use base_encoded::BaseEncoded;
 
-/// BaseEncoder trait and impls
+/// `BaseEncoder` trait and impls
 pub mod base_encoder;
 pub use base_encoder::{Base58Encoder, BaseEncoder, DetectedEncoder, MultibaseEncoder};
 
 /// Base related utility functions / types
 pub mod base_util;
-pub use base_util::{base_name, BaseIter};
+pub use base_util::{BaseIter, base_name};
 
-/// CodecInfo trait
+/// `CodecInfo` trait
 pub mod codec_info;
 pub use codec_info::CodecInfo;
 
-/// EncodingInfo trait
+/// `EncodingInfo` trait
 pub mod encoding_info;
 pub use encoding_info::EncodingInfo;
 
@@ -119,8 +130,8 @@ mod test {
     }
 
     impl From<Unit> for Vec<u8> {
-        fn from(unit: Unit) -> Vec<u8> {
-            let mut v = Vec::default();
+        fn from(unit: Unit) -> Self {
+            let mut v = Self::default();
             v.extend_from_slice(&unit.0);
             v
         }
