@@ -23,7 +23,7 @@ pub const MAX_DECODED_SIZE: usize = 16 * 1024 * 1024;
 pub type EncodedVarbytes = BaseEncoded<Varbytes>;
 
 impl Varbytes {
-    /// Create a new Varbytes from a Vec<u8>
+    /// Create a new Varbytes from a `Vec<u8>`
     #[must_use]
     pub const fn new(data: Vec<u8>) -> Self {
         Self(data)
@@ -64,6 +64,13 @@ impl ops::Deref for Varbytes {
 
     #[inline]
     fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl AsRef<[u8]> for Varbytes {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }

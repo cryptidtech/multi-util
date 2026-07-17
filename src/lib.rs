@@ -3,13 +3,11 @@
 //!
 //! Multiformat utility functions and types.
 //!
-//! ## `no_std` Note
+//! ## `std` Requirement
 //!
 //! This crate is currently std-only. The `serde` dependency is configured with
-//! `default-features = false, features = ["alloc"]` so that the serde layer
-//! itself does not pull in std, but the crate as a whole still requires std
-//! via `thiserror` and the lack of a `#![no_std]` crate attribute. A future
-//! release may introduce a `std` feature gate and full `no_std` support.
+//! `features = ["std"]` to match. A future release may introduce a `std`
+//! feature gate and full `no_std` + `alloc` support.
 #![warn(missing_docs)]
 #![deny(
     unsafe_code,
