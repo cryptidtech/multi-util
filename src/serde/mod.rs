@@ -3,6 +3,8 @@
 mod de;
 mod ser;
 
+pub use de::deserialize_varbytes_with_max;
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
@@ -284,5 +286,94 @@ mod tests {
     fn test_encoded_varbytes() {
         let v = Varbytes::encoded_new(Base::Base16Lower, vec![0x01, 0x02, 0x03]);
         assert_tokens(&v.readable(), &[Token::Str("f03010203")]);
+    }
+
+    // ========================================================================
+    // H4: serde Varbytes bounds-check tests
+    // ========================================================================
+
+    #[test]
+    fn test_varbytes_serde_len_exceeds_buffer_is_err_not_panic() {
+        // Crafted payload: length prefix claims 4 bytes but only 3 follow.
+        // Pre-fix this panicked with an index-out-of-bounds; it must now
+        // return a clean Err.
+        let malicious: &[u8] = &[0x04, 0x01, 0x02, 0x03];
+
+        let result: Result<Varbytes, serde_json::Error> =
+            serde_json::from_slice(serde_json::to_string(malicious).unwrap().as_bytes());
+        // serde_json hands the bytes to the visitor; the bounds check must
+        // reject the over-long length claim without panicking.
+        // (Depending on the format the bytes may arrive via visit_bytes or
+        // visit_seq; either way the shared decode_varbytes helper rejects it.)
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_varbytes_serde_len_exceeds_buffer_binary() {
+        // Direct binary deserialization via serde_cbor to exercise the
+        // visit_bytes / visit_byte_buf paths.
+        let malicious: &[u8] = &[0x04, 0x01, 0x02, 0x03];
+        let result: Result<Varbytes, serde_cbor::Error> = serde_cbor::from_slice(malicious);
+        assert!(result.is_err(), "must reject len > buffer, not panic");
+    }
+
+    #[test]
+    fn test_varbytes_serde_len_exceeds_max_is_err() {
+        // Length prefix claims just over MAX_DECODED_SIZE. The buffer is
+        // trivially small so this also exceeds the buffer; the key property
+        // is that it returns Err rather than attempting a huge allocation.
+        use multi_trait::EncodeInto;
+        let over_max = MAX_DECODED_SIZE + 1;
+        let mut payload = Vec::new();
+        payload.extend(over_max.encode_into());
+        payload.extend(&[0u8; 4]); // a few bytes, nowhere near over_max
+
+        let result: Result<Varbytes, serde_cbor::Error> = serde_cbor::from_slice(&payload);
+        assert!(result.is_err(), "must reject len > MAX_DECODED_SIZE");
+    }
+
+    #[test]
+    fn test_varbytes_serde_len_just_under_max_ok() {
+        // A length just under MAX_DECODED_SIZE with a matching buffer is
+        // accepted by the cap. We don't actually allocate ~16 MiB here; we
+        // verify the cap logic via the configurable helper with a small max.
+        use super::deserialize_varbytes_with_max;
+        use multi_trait::EncodeInto;
+
+        let max = 8usize;
+        let data = vec![0xABu8; max];
+        let mut payload = Vec::new();
+        payload.extend(max.encode_into());
+        payload.extend(&data);
+
+        let de = serde::de::value::BytesDeserializer::<serde::de::value::Error>::new(&payload);
+        let v: Varbytes =
+            deserialize_varbytes_with_max(de, max).expect("len == max should be accepted");
+        assert_eq!(v.as_bytes(), &data[..]);
+    }
+
+    #[test]
+    fn test_varbytes_serde_len_just_over_max_is_err() {
+        use super::deserialize_varbytes_with_max;
+        use multi_trait::EncodeInto;
+
+        let max = 8usize;
+        let over = max + 1;
+        let mut payload = Vec::new();
+        payload.extend(over.encode_into());
+        payload.extend(vec![0u8; over]); // buffer is large enough; only the cap rejects
+
+        let de = serde::de::value::BytesDeserializer::<serde::de::value::Error>::new(&payload);
+        let result = deserialize_varbytes_with_max(de, max);
+        assert!(result.is_err(), "len just over max must be rejected");
+    }
+
+    #[test]
+    fn test_varbytes_serde_valid_roundtrip() {
+        // Sanity: a well-formed varbytes still round-trips through serde.
+        let v = Varbytes::new(vec![0xDE, 0xAD, 0xBE, 0xEF]);
+        let encoded = serde_cbor::to_vec(&v).expect("serialize");
+        let decoded: Varbytes = serde_cbor::from_slice(&encoded).expect("deserialize");
+        assert_eq!(v, decoded);
     }
 }

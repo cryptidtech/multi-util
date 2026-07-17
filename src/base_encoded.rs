@@ -12,7 +12,7 @@ use core::{
 
 /// Smart pointer for multibase encoded data. This supports encoding to and
 /// decoding from multibase encoding strings using [`TryFrom<&str>`] and
-/// [`to_string()`](core::fmt::Display::to_string)
+/// `to_string()` (via [`fmt::Display`])
 #[derive(Clone)]
 pub struct BaseEncoded<T, Enc = MultibaseEncoder>
 where
@@ -141,7 +141,14 @@ where
     Enc: BaseEncoder,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.to_string().hash(state);
+        // Hash the raw encoded bytes directly instead of going through
+        // `Display` (which would allocate a `String` and format the base
+        // encoding). This still allocates a `Vec<u8>` for the `Into`
+        // conversion but avoids the much more expensive `Display` + `String`
+        // formatting path.
+        let bytes: Vec<u8> = self.t.clone().into();
+        bytes.as_slice().hash(state);
+        self.base.hash(state);
     }
 }
 
@@ -175,6 +182,13 @@ where
     Enc: BaseEncoder,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Note: the pre-fix path was `self.t.clone().into()` which allocates
+        // a `Vec<u8>`. A zero-allocation `AsRef<[u8]>` path would require
+        // adding that bound to `T`, which is breaking for types like
+        // `Varuint<T>` whose inner value is not a contiguous byte buffer.
+        // The `Hash` impl below has been optimised to avoid going through
+        // `Display`/`String`; this `Display` impl retains the single
+        // `Vec<u8>` allocation required to hand `&[u8]` to the base encoder.
         write!(
             f,
             "{}",
@@ -185,7 +199,7 @@ where
 
 impl<T, Enc> fmt::Debug for BaseEncoded<T, Enc>
 where
-    T: fmt::Debug + EncodingInfo + Clone + Into<Vec<u8>>,
+    T: fmt::Debug + EncodingInfo,
     Enc: BaseEncoder,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
