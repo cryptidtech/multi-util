@@ -3,11 +3,22 @@
 //!
 //! Multiformat utility functions and types.
 //!
-//! ## `std` Requirement
+//! ## `no_std` Support
 //!
-//! This crate is currently std-only. The `serde` dependency is configured with
-//! `features = ["std"]` to match. A future release may introduce a `std`
-//! feature gate and full `no_std` + `alloc` support.
+//! This crate supports `no_std` environments with `alloc`. Disable the
+//! default features to drop the `std` dependency:
+//!
+//! ```toml
+//! [dependencies]
+//! multi-util = { version = "1.1", default-features = false }
+//! ```
+//!
+//! To use serde under `no_std`, enable only the `serde` feature:
+//!
+//! ```toml
+//! [dependencies]
+//! multi-util = { version = "1.1", default-features = false, features = ["serde"] }
+//! ```
 #![warn(missing_docs)]
 #![deny(
     unsafe_code,
@@ -16,6 +27,10 @@
     unused_import_braces,
     unused_qualifications
 )]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 /// `BaseEncoded` smart pointer
 pub mod base_encoded;
@@ -47,7 +62,7 @@ pub mod serde;
 
 /// Varbytes type for forcing serde of `Vec<u8>` to/from bytes
 pub mod varbytes;
-pub use varbytes::{EncodedVarbytes, Varbytes};
+pub use varbytes::{EncodedVarbytes, Varbytes, VarbytesMax};
 
 /// Varunit type for handling serde of numeric types
 pub mod varuint;

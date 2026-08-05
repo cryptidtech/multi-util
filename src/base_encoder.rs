@@ -4,6 +4,8 @@ use crate::{
     error::{BaseEncodedError, BaseEncoderError},
     prelude::Base,
 };
+#[cfg(not(feature = "std"))]
+use alloc::{format, string::String, vec, vec::Vec};
 
 /// a trait for base encoding implementations
 pub trait BaseEncoder {

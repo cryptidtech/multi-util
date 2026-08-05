@@ -2,6 +2,8 @@
 use crate::{
     BaseEncoder, EncodingInfo, Error, MultibaseEncoder, error::BaseEncodedError, prelude::Base,
 };
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use core::{
     cmp::Ordering,
     fmt,

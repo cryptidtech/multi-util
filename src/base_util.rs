@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::prelude::Base;
+#[cfg(not(feature = "std"))]
+use alloc::string::{String, ToString};
 
 /// convert a multibase Base to its string equivalent
 #[must_use]

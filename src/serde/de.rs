@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-use crate::{
-    BaseEncoded, BaseEncoder, EncodingInfo, Varbytes, Varuint, varbytes::MAX_DECODED_SIZE,
+use crate::{BaseEncoded, BaseEncoder, EncodingInfo, Varbytes, Varuint, varbytes::VarbytesMax};
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
 };
 use core::{fmt, marker};
 use multi_base::Base;
@@ -172,16 +175,22 @@ where
     }
 }
 
-/// Deserialize instance of [`crate::Varbytes`] from a byte slice
-impl<'de> de::Deserialize<'de> for Varbytes {
+/// Deserialize instance of [`crate::VarbytesMax`] from a byte slice.
+///
+/// The `MAX` const generic sets the maximum decoded size. The default
+/// (`DEFAULT_MAX = 16 MiB`) applies when deserializing the [`Varbytes`] alias.
+/// Use `VarbytesMax<N>` directly for a custom cap at the type level. For a
+/// per-field override without a distinct type, use
+/// [`deserialize_varbytes_with_max`].
+impl<'de, const MAX: usize> de::Deserialize<'de> for VarbytesMax<MAX> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        struct VarbytesVisitor;
+        struct VarbytesVisitorMaxConst<const MAX: usize>;
 
-        impl<'de> de::Visitor<'de> for VarbytesVisitor {
-            type Value = Varbytes;
+        impl<'de, const M: usize> de::Visitor<'de> for VarbytesVisitorMaxConst<M> {
+            type Value = VarbytesMax<M>;
 
             fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, "varuint encoded len followed by bytes")
@@ -195,7 +204,7 @@ impl<'de> de::Deserialize<'de> for Varbytes {
             where
                 E: de::Error,
             {
-                decode_varbytes(v, MAX_DECODED_SIZE)
+                decode_varbytes(v, M).map(VarbytesMax::new)
             }
 
             #[inline]
@@ -203,7 +212,7 @@ impl<'de> de::Deserialize<'de> for Varbytes {
             where
                 E: de::Error,
             {
-                decode_varbytes(v, MAX_DECODED_SIZE)
+                decode_varbytes(v, M).map(VarbytesMax::new)
             }
 
             // longest lifetime
@@ -212,13 +221,13 @@ impl<'de> de::Deserialize<'de> for Varbytes {
             where
                 E: de::Error,
             {
-                decode_varbytes(v.as_slice(), MAX_DECODED_SIZE)
+                decode_varbytes(v.as_slice(), M).map(VarbytesMax::new)
             }
 
             // binary / human readable
 
-            // this typically only happens when there are bytes serialized into
-            // a human readable format.
+            // This typically only happens when bytes are serialized into a
+            // human-readable format.
             #[inline]
             fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
             where
@@ -228,25 +237,27 @@ impl<'de> de::Deserialize<'de> for Varbytes {
                 while let Some(b) = seq.next_element()? {
                     v.push(b);
                 }
-                decode_varbytes(v.as_slice(), MAX_DECODED_SIZE)
+                decode_varbytes(v.as_slice(), M).map(VarbytesMax::new)
             }
         }
 
-        deserializer.deserialize_bytes(VarbytesVisitor)
+        deserializer.deserialize_bytes(VarbytesVisitorMaxConst::<MAX>)
     }
 }
 
-/// Decode a `Varbytes` value from a byte slice with a caller-supplied maximum
-/// decoded size.
+/// Decode a `Varbytes` payload from a byte slice with a caller-supplied
+/// maximum decoded size.
 ///
-/// This is the shared bounds-checked decode path used by the [`Varbytes`]
-/// [`Deserialize`](de::Deserialize) impl and by
+/// This is the shared bounds-checked decode path used by the
+/// [`VarbytesMax`] [`Deserialize`](de::Deserialize) impl and by
 /// [`deserialize_varbytes_with_max`]. It mirrors the safety checks in
-/// [`Varbytes::try_decode_from`](crate::Varbytes::try_decode_from): after
-/// decoding the length prefix, it rejects lengths that exceed the available
-/// buffer (preventing an out-of-bounds read / panic) and lengths that exceed
-/// the supplied maximum (preventing unbounded allocation).
-fn decode_varbytes<E>(input: &[u8], max: usize) -> Result<Varbytes, E>
+/// [`VarbytesMax::try_decode_from`](crate::VarbytesMax::try_decode_from).
+/// After decoding the length prefix, it rejects lengths that exceed the
+/// available buffer (preventing an out-of-bounds read or panic) and lengths
+/// that exceed the supplied maximum (preventing unbounded allocation). It
+/// returns the raw decoded bytes. The caller wraps them in the appropriate
+/// `VarbytesMax<MAX>` type.
+fn decode_varbytes<E>(input: &[u8], max: usize) -> Result<Vec<u8>, E>
 where
     E: de::Error,
 {
@@ -261,11 +272,11 @@ where
     }
 
     let v = ptr[..len].to_vec();
-    Ok(Varbytes::new(v))
+    Ok(v)
 }
 
 /// Deserialize a [`Varbytes`] with a caller-specified maximum decoded size,
-/// overriding the default [`MAX_DECODED_SIZE`] cap.
+/// overriding the default [`DEFAULT_MAX`] cap.
 ///
 /// Use this with `#[serde(deserialize_with = "...")]` when a field needs a
 /// tighter or looser bound than the crate-wide default:
@@ -322,7 +333,7 @@ where
         where
             E: de::Error,
         {
-            decode_varbytes(v, self.0)
+            decode_varbytes(v, self.0).map(Varbytes::new)
         }
 
         #[inline]
@@ -330,7 +341,7 @@ where
         where
             E: de::Error,
         {
-            decode_varbytes(v, self.0)
+            decode_varbytes(v, self.0).map(Varbytes::new)
         }
 
         #[inline]
@@ -338,7 +349,7 @@ where
         where
             E: de::Error,
         {
-            decode_varbytes(v.as_slice(), self.0)
+            decode_varbytes(v.as_slice(), self.0).map(Varbytes::new)
         }
 
         #[inline]
@@ -350,7 +361,7 @@ where
             while let Some(b) = seq.next_element()? {
                 v.push(b);
             }
-            decode_varbytes(v.as_slice(), self.0)
+            decode_varbytes(v.as_slice(), self.0).map(Varbytes::new)
         }
     }
 

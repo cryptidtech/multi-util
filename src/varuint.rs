@@ -14,6 +14,8 @@
 //! `Varuint` and the integer trait impls in `multi-trait` are two abstraction
 //! levels over the same underlying `unsigned-varint` codec.
 use crate::{BaseEncoded, EncodingInfo, Error};
+#[cfg(not(feature = "std"))]
+use alloc::vec::Vec;
 use core::{fmt, ops};
 use multi_base::Base;
 use multi_trait::{EncodeInto, TryDecodeFrom};

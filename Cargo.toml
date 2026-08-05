@@ -1,6 +1,6 @@
 [package]
 name = "multi-util"
-version = "1.0.5"
+version = "1.1.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Dave Huseby <dwh@linuxprogrammer.org>"]
@@ -8,18 +8,25 @@ description = "Multiformat utility functions and types"
 repository = "https://github.com/cryptidtech/multi-util.git"
 readme = "README.md"
 license = "Apache-2.0"
-keywords = ["multiformats", "multicodec", "multibase", "encoding"]
+keywords = ["multiformats", "multicodec", "multibase", "encoding", "no_std"]
 categories = ["encoding"]
 
 [features]
-default = ["serde"]
+default = ["std", "serde"]
+std = [
+    "multi-base/std",
+    "multi-codec/std",
+    "multi-trait/std",
+    "thiserror/std",
+    "serde?/std",
+]
 
 [dependencies]
-multi-base = "1.0"
-multi-codec = "1.0"
-multi-trait = "1.0"
-serde = { version = "1.0", default-features = false, features = ["std"], optional = true }
-thiserror = { version = "2.0" }
+multi-base = { version = "1.0", default-features = false }
+multi-codec = { version = "1.0", default-features = false }
+multi-trait = { version = "1.0", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"], optional = true }
+thiserror = { version = "2.0", default-features = false }
 
 [dev-dependencies]
 ciborium = "0.2"

@@ -331,24 +331,24 @@ mod tests {
 
     #[test]
     fn test_varbytes_serde_len_exceeds_max_is_err() {
-        // Length prefix claims just over MAX_DECODED_SIZE. The buffer is
-        // trivially small so this also exceeds the buffer; the key property
+        // Length prefix claims just over DEFAULT_MAX. The buffer is
+        // trivially small so this also exceeds the buffer. The key property
         // is that it returns Err rather than attempting a huge allocation.
         use multi_trait::EncodeInto;
-        let over_max = MAX_DECODED_SIZE + 1;
+        let over_max = DEFAULT_MAX + 1;
         let mut payload = Vec::new();
         payload.extend(over_max.encode_into());
         payload.extend(&[0u8; 4]); // a few bytes, nowhere near over_max
 
         let result: Result<Varbytes, ciborium::de::Error<std::io::Error>> =
             ciborium::from_reader(payload.as_slice());
-        assert!(result.is_err(), "must reject len > MAX_DECODED_SIZE");
+        assert!(result.is_err(), "must reject len > DEFAULT_MAX");
     }
 
     #[test]
     fn test_varbytes_serde_len_just_under_max_ok() {
-        // A length just under MAX_DECODED_SIZE with a matching buffer is
-        // accepted by the cap. We don't actually allocate ~16 MiB here; we
+        // A length just under DEFAULT_MAX with a matching buffer is
+        // accepted by the cap. We do not actually allocate ~16 MiB here. We
         // verify the cap logic via the configurable helper with a small max.
         use super::deserialize_varbytes_with_max;
         use multi_trait::EncodeInto;

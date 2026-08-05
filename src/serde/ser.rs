@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::{BaseEncoded, BaseEncoder, EncodingInfo, Varbytes, Varuint};
+#[cfg(not(feature = "std"))]
+use alloc::{string::ToString, vec::Vec};
 use multi_trait::prelude::EncodeInto;
 use serde::ser;
 
