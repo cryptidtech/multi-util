@@ -250,7 +250,7 @@ mod test {
 
         let (decoded, rest) = Small::try_decode_from(&encoded).expect("under cap accepts");
         assert_eq!(decoded.to_inner(), data);
-        assert!(rest.is_empty());
+        assert_eq!(rest.len(), 0);
     }
 
     #[test]
@@ -289,7 +289,7 @@ mod test {
 
         let (decoded, rest) = Small::try_decode_from(&encoded).expect("exact cap accepts");
         assert_eq!(decoded.to_inner(), data);
-        assert!(rest.is_empty());
+        assert_eq!(rest.len(), 0);
     }
 
     // ============================================================================
@@ -353,7 +353,7 @@ mod test {
 
         let (varbytes, remaining) = result.unwrap();
         assert_eq!(varbytes.to_inner(), Vec::<u8>::new());
-        assert!(remaining.is_empty());
+        assert_eq!(remaining.len(), 0);
     }
 
     #[test]
@@ -371,7 +371,7 @@ mod test {
 
         let (varbytes, remaining) = result.unwrap();
         assert_eq!(varbytes.to_inner(), data);
-        assert!(remaining.is_empty());
+        assert_eq!(remaining.len(), 0);
     }
 
     #[test]
@@ -439,7 +439,7 @@ mod test {
         let inner = varbytes.to_inner();
         assert_eq!(inner.len(), 1024 * 1024);
         assert_eq!(inner[0], 0x42);
-        assert!(remaining.is_empty());
+        assert_eq!(remaining.len(), 0);
     }
 
     #[test]

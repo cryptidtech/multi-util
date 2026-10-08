@@ -37,7 +37,7 @@ To use serde under `no_std`, enable only the `serde` feature:
 multi-util = { version = "1.1", default-features = false, features = ["serde"] }
 ```
 
-MSRV: Rust 1.85 (Edition 2024).
+MSRV: Rust 1.99 (Edition 2024).
 
 ## Feature Flags
 

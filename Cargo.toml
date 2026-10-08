@@ -2,7 +2,7 @@
 name = "multi-util"
 version = "1.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.99"
 authors = ["Dave Huseby <dwh@linuxprogrammer.org>"]
 description = "Multiformat utility functions and types"
 repository = "https://github.com/cryptidtech/multi-util.git"
