@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-08
+
+### Changed
+
+- Raised `rust-version` from 1.85 to 1.99. The CI MSRV job pins 1.99.0 and the README MSRV line reads 1.99. A minor release carries this change: a raised MSRV is possibly breaking per the Cargo book rules.
+- Fixed the clippy 0.1.99 `assert_is_empty` findings in the `VarBytes` tests. No public API changes.
+
 ## [1.1.0] - 2026-07-29
 
 ### Added
@@ -114,6 +121,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Renamed the crate from `bs-multiutil` to `multi-util`.
 - Initial published release on crates.io as `multi-util`.
 
+[1.2.0]: https://github.com/cryptidtech/multi-util/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/cryptidtech/multi-util/compare/v1.0.5...v1.1.0
 [1.0.5]: https://github.com/cryptidtech/multi-util/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/cryptidtech/multi-util/compare/v1.0.3...v1.0.4
