@@ -10,6 +10,7 @@ use core::{
     hash::{Hash, Hasher},
     marker::PhantomData,
     ops,
+    str::FromStr,
 };
 
 /// Smart pointer for multibase encoded data. This supports encoding to and
@@ -97,6 +98,18 @@ where
             }
             Err(e) => Err(e),
         }
+    }
+}
+
+impl<T, Enc> FromStr for BaseEncoded<T, Enc>
+where
+    T: EncodingInfo + for<'a> TryFrom<&'a [u8]>,
+    Enc: BaseEncoder,
+{
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::try_from(s)
     }
 }
 
